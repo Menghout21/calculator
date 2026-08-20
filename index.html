@@ -275,7 +275,7 @@
 
   function calculate(showLove = true){
     if(op === null || prev === ""){
-      if(showLove) showLoveMessage();
+      if(showLove && curr !== "0" && curr !== "") showLoveMessage();
       return;
     }
     const a = parseFloat(prev.split(" ")[0]);
