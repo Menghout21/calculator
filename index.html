@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calculator</title>
+<style>
+  :root{
+    --bg1:#2b1b2f;
+    --bg2:#3d1e2f;
+    --body-bg:#1a1220;
+    --panel:#241a2c;
+    --key:#33253c;
+    --key-hover:#44304f;
+    --op:#c2185b;
+    --op-hover:#d81b60;
+    --equals:#ff6f91;
+    --text:#f4e9f0;
+    --muted:#9d8aa5;
+    --accent:#ff86a8;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    height:100%;
+    margin:0;
+  }
+  body{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100dvh;
+    background:
+      radial-gradient(circle at 20% 20%, var(--bg1), transparent 60%),
+      radial-gradient(circle at 80% 80%, var(--bg2), transparent 60%),
+      var(--body-bg);
+    font-family:'Segoe UI', system-ui, sans-serif;
+    padding:
+      max(16px, env(safe-area-inset-top))
+      max(16px, env(safe-area-inset-right))
+      max(16px, env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
+  }
+
+  .calc{
+    width:100%;
+    max-width:320px;
+    background:var(--panel);
+    border-radius:clamp(16px, 5vw, 24px);
+    padding:clamp(14px, 4vw, 20px);
+    box-shadow:0 20px 50px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.03);
+  }
+
+  @media (min-width:600px){
+    .calc{ max-width:340px; }
+  }
+
+  @media (min-width:900px){
+    .calc{ max-width:360px; }
+  }
+
+  @media (max-height:480px) and (orientation:landscape){
+    body{ align-items:flex-start; padding-top:12px; padding-bottom:12px; }
+    .calc{ max-width:380px; }
+    .screen{ min-height:56px; padding:10px 14px; margin-bottom:10px; }
+    .keys{ gap:6px; }
+    button{ padding:10px 0; }
+  }
+
+  .screen{
+    background:rgba(0,0,0,0.25);
+    border-radius:clamp(12px, 4vw, 16px);
+    padding:clamp(12px, 4vw, 18px) clamp(12px, 3.5vw, 16px);
+    margin-bottom:clamp(12px, 3.5vw, 16px);
+    text-align:right;
+    min-height:clamp(64px, 18vw, 80px);
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    overflow:hidden;
+  }
+
+  .prev{
+    color:var(--muted);
+    font-size:clamp(12px, 3vw, 14px);
+    min-height:18px;
+    word-break:break-all;
+  }
+
+  .curr{
+    color:var(--text);
+    font-size:clamp(24px, 8vw, 32px);
+    font-weight:600;
+    word-break:break-all;
+    transition:transform 0.15s ease;
+  }
+
+  .curr.love{
+    font-size:clamp(18px, 6vw, 24px);
+    color:var(--accent);
+    animation:pop 0.4s ease;
+  }
+
+  @keyframes pop{
+    0%{ transform:scale(0.7); opacity:0; }
+    60%{ transform:scale(1.08); opacity:1; }
+    100%{ transform:scale(1); }
+  }
+
+  .keys{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:clamp(6px, 2.5vw, 10px);
+  }
+
+  button{
+    border:none;
+    outline:none;
+    border-radius:clamp(10px, 3.5vw, 14px);
+    padding:clamp(12px, 4vw, 16px) 0;
+    font-size:clamp(15px, 4.5vw, 18px);
+    font-weight:500;
+    color:var(--text);
+    background:var(--key);
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+    min-height:44px;
+    transition:background 0.15s ease, transform 0.08s ease;
+  }
+
+  button:hover{
+    background:var(--key-hover);
+  }
+
+  button:active{
+    transform:scale(0.94);
+  }
+
+  button.op{
+    background:transparent;
+    color:var(--op-hover);
+    font-weight:600;
+  }
+  button.op:hover{
+    background:rgba(216,27,96,0.12);
+  }
+
+  button.span2{
+    grid-column:span 2;
+  }
+
+  button.clear{
+    color:#ffb3c1;
+  }
+
+  button.equals{
+    background:linear-gradient(135deg, var(--op), var(--equals));
+    color:#fff;
+    font-weight:700;
+  }
+  button.equals:hover{
+    filter:brightness(1.08);
+  }
+
+  .heart-burst{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    overflow:hidden;
+  }
+
+  .heart{
+    position:absolute;
+    bottom:-10%;
+    font-size:20px;
+    opacity:0.9;
+    animation:rise linear forwards;
+  }
+
+  @keyframes rise{
+    to{
+      transform:translateY(-110vh) rotate(20deg);
+      opacity:0;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="calc">
+  <div class="screen">
+    <div class="prev" id="prev"></div>
+    <div class="curr" id="curr">0</div>
+  </div>
+
+  <div class="keys">
+    <button class="clear span2" onclick="clearAll()">C</button>
+    <button class="op" onclick="del()">⌫</button>
+    <button class="op" onclick="chooseOp('/')">÷</button>
+
+    <button onclick="appendNum('7')">7</button>
+    <button onclick="appendNum('8')">8</button>
+    <button onclick="appendNum('9')">9</button>
+    <button class="op" onclick="chooseOp('*')">×</button>
+
+    <button onclick="appendNum('4')">4</button>
+    <button onclick="appendNum('5')">5</button>
+    <button onclick="appendNum('6')">6</button>
+    <button class="op" onclick="chooseOp('-')">−</button>
+
+    <button onclick="appendNum('1')">1</button>
+    <button onclick="appendNum('2')">2</button>
+    <button onclick="appendNum('3')">3</button>
+    <button class="op" onclick="chooseOp('+')">+</button>
+
+    <button class="span2" onclick="appendNum('0')">0</button>
+    <button onclick="appendNum('.')">.</button>
+    <button class="equals" onclick="calculate()">=</button>
+  </div>
+</div>
+
+<div class="heart-burst" id="heartBurst"></div>
+
+<script>
+  let curr = "0";
+  let prev = "";
+  let op = null;
+
+  const currEl = document.getElementById("curr");
+  const prevEl = document.getElementById("prev");
+
+  function updateScreen(){
+    currEl.textContent = curr;
+    prevEl.textContent = prev;
+    currEl.classList.remove("love");
+  }
+
+  function clearAll(){
+    curr = "0";
+    prev = "";
+    op = null;
+    updateScreen();
+  }
+
+  function del(){
+    if(curr.length > 1){
+      curr = curr.slice(0, -1);
+    } else {
+      curr = "0";
+    }
+    updateScreen();
+  }
+
+  function appendNum(n){
+    if(n === "." && curr.includes(".")) return;
+    if(curr === "0" && n !== "."){
+      curr = n;
+    } else {
+      curr += n;
+    }
+    updateScreen();
+  }
+
+  function chooseOp(chosen){
+    if(op !== null) calculate(false);
+    prev = curr + " " + symbolFor(chosen);
+    op = chosen;
+    curr = "0";
+    updateScreen();
+  }
+
+  function symbolFor(o){
+    return {"+":"+","-":"−","*":"×","/":"÷"}[o];
+  }
+
+  function calculate(showLove = true){
+    if(op === null || prev === ""){
+      if(showLove) showLoveMessage();
+      return;
+    }
+    const a = parseFloat(prev.split(" ")[0]);
+    const b = parseFloat(curr);
+    let result;
+    switch(op){
+      case "+": result = a + b; break;
+      case "-": result = a - b; break;
+      case "*": result = a * b; break;
+      case "/": result = b === 0 ? NaN : a / b; break;
+    }
+    curr = Number.isNaN(result) ? "Error" : trimResult(result);
+    prev = "";
+    op = null;
+
+    if(showLove){
+      showLoveMessage();
+    } else {
+      updateScreen();
+    }
+  }
+
+  function trimResult(n){
+    return parseFloat(n.toFixed(8)).toString();
+  }
+
+  function showLoveMessage(){
+    prevEl.textContent = "";
+    currEl.textContent = "I ❤️ YOU";
+    currEl.classList.add("love");
+    launchHearts();
+
+    setTimeout(() => {
+      curr = "0";
+      prev = "";
+      op = null;
+      updateScreen();
+    }, 1800);
+  }
+
+  function launchHearts(){
+    const burst = document.getElementById("heartBurst");
+    const symbols = ["❤️","💕","💖","💗","💘"];
+    for(let i = 0; i < 18; i++){
+      const heart = document.createElement("div");
+      heart.className = "heart";
+      heart.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+      heart.style.left = Math.random() * 100 + "%";
+      heart.style.fontSize = (14 + Math.random() * 18) + "px";
+      const duration = 1.6 + Math.random() * 1.4;
+      heart.style.animationDuration = duration + "s";
+      heart.style.animationDelay = (Math.random() * 0.3) + "s";
+      burst.appendChild(heart);
+      setTimeout(() => heart.remove(), (duration + 0.5) * 1000);
+    }
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if(e.key >= "0" && e.key <= "9") appendNum(e.key);
+    else if(e.key === ".") appendNum(".");
+    else if(["+","-","*","/"].includes(e.key)) chooseOp(e.key);
+    else if(e.key === "Enter" || e.key === "=") calculate();
+    else if(e.key === "Backspace") del();
+    else if(e.key.toLowerCase() === "c") clearAll();
+  });
+</script>
+
+</body>
+</html>
